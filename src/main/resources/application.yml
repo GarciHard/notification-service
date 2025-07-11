@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: notification-service-api
+  datasource:
+    url: ${POSTGRES_URI}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASS}
+    driver-class-name: org.postgresql.Driver
+  config:
+    import: file:misc/.env[.properties]
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8070/eureka/
+  instance:
+    hostname: localhost
