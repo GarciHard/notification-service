@@ -15,7 +15,7 @@ public class MessageReceiver {
 
     private final NotificationService notificationService;
 
-    @RabbitListener(queues = "todo_task_queue", containerFactory = "rabbitListenerContainerFactory")
+    @RabbitListener(queues = "${spring.rabbitmq.template.default-receive-queue}")
     public void receiveMessage(@Payload ReceivedMessageDTO message) {
         log.info("Received message: [{}]", message);
         notificationService.processNotification(message);

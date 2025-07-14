@@ -1,39 +1,58 @@
 package com.garcihard.notification.config;
 
-import com.garcihard.notification.model.dto.ReceivedMessageDTO;
-import com.garcihard.notification.service.MessageReceiver;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-
+@RequiredArgsConstructor
+@EnableConfigurationProperties(RabbitMQProperties.class)
 @Configuration
 public class RabbitMQConfig {
 
-//    static final String QUEUE_NAME = "todo_task_queue";
-//
-//    @Bean
-//    SimpleMessageListenerContainer container(ConnectionFactory connectionFactory,
-//                                             MessageListenerAdapter listenerAdapter) {
-//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-//        container.setConnectionFactory(connectionFactory);
-//        container.setQueueNames(QUEUE_NAME);
-//        container.setMessageListener(listenerAdapter);
-//
-//        return container;
-//    }
-//
-//    @Bean
-//    MessageListenerAdapter listenerAdapter(MessageReceiver receiver,
-//                                           Jackson2JsonMessageConverter messageConverter) {
-//        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveMessage");
-//        adapter.setMessageConverter(messageConverter);
-//        return adapter;
-//    }
+    private final RabbitMQProperties properties;
+
+    @Bean
+    public Queue queue() {
+        return QueueBuilder.durable(properties.defaultReceiveQueue())
+                .withArgument("x-dead-letter-exchange", "dlx-exchange")
+                .withArgument("x-dead-letter-routing-key", "dlx.routing.key")
+                .build();
+    }
+
+    @Bean
+    public DirectExchange exchange() {
+        return new DirectExchange(properties.exchange());
+    }
+
+    @Bean
+    public Binding binding(Queue queue, DirectExchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(properties.routingKey());
+    }
+
+    @Bean
+    public Queue dlq () {
+        return new Queue("dlq-queue", true);
+    }
+
+    @Bean
+    public DirectExchange dlxExchange() {
+        return new DirectExchange("dlx-exchange");
+    }
+
+    @Bean
+    public Binding dlqBinding(Queue dlq, DirectExchange dlxExchange) {
+        return BindingBuilder.bind(dlq)
+                .to(dlxExchange)
+                .with("dlx.routing.key");
+    }
+
+    @Bean
+    public Jackson2JsonMessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
+    }
 }
